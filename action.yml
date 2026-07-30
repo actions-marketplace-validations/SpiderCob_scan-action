@@ -1,0 +1,54 @@
+name: 'SpiderCob Security Scan'
+description: 'Scan code for hardcoded secrets, PII, and vulnerabilities. Powered by spidercob.'
+author: 'SpiderCob'
+
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  scan_path:
+    description: 'Directory to scan (default: repo root)'
+    required: false
+    default: '.'
+  fail_on:
+    description: 'Minimum severity to fail the check: CRITICAL, HIGH, MEDIUM, LOW, NONE'
+    required: false
+    default: 'HIGH'
+  scan_type:
+    description: 'What to scan: code (secrets + vulns), dlp (PII), both'
+    required: false
+    default: 'both'
+  exclude_patterns:
+    description: 'Comma-separated list of pattern IDs to exclude'
+    required: false
+    default: ''
+  changed_files_only:
+    description: 'Only scan files changed in this PR (true/false)'
+    required: false
+    default: 'false'
+
+outputs:
+  findings_count:
+    description: 'Total number of findings'
+  risk_level:
+    description: 'Highest risk level found: CRITICAL, HIGH, MEDIUM, LOW, NONE'
+  verdict:
+    description: 'BLOCK, REVIEW, or ALLOW'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install spidercob
+      shell: bash
+      run: pip install spidercob --quiet
+
+    - name: Run SpiderCob scan
+      shell: bash
+      env:
+        SPIDERCOB_SCAN_PATH: ${{ inputs.scan_path }}
+        SPIDERCOB_FAIL_ON: ${{ inputs.fail_on }}
+        SPIDERCOB_SCAN_TYPE: ${{ inputs.scan_type }}
+        SPIDERCOB_EXCLUDE: ${{ inputs.exclude_patterns }}
+        SPIDERCOB_CHANGED_ONLY: ${{ inputs.changed_files_only }}
+      run: python ${{ github.action_path }}/scan.py
