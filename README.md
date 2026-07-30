@@ -1,19 +1,21 @@
-# SpiderCob Security Scan — GitHub Action
+# SpiderCob Security Scan — Offline GitHub Action
 
-Scan your code for hardcoded secrets, PII, and vulnerabilities on every push and pull request. Powered by [spidercob](https://pypi.org/project/spidercob/).
+> **Zero setup** — no account, no API token, fully offline. Runs regex scanning locally on the GitHub runner.
+> For higher accuracy with ML-powered detection, try [SpiderCob/dlp-scan-action](https://github.com/marketplace/actions/dlp-secret-scan).
 
-- Detects 40+ secret patterns (AWS, GitHub, OpenAI, Stripe, Slack, and more)
-- Detects PII (SSN, credit cards, emails, phone numbers)
-- Detects vulnerable code patterns (SQL injection, command injection, XSS, and more)
-- Inline GitHub annotations — findings appear directly on the diff
-- Fully offline — no data sent anywhere
-- Zero configuration required
+Scan your code for hardcoded secrets, PII, and vulnerabilities — no signup required, no data leaves the runner.
 
-## Quick Start
+- **Fully offline** — no network calls, no account needed
+- Detects 40+ secret patterns: AWS, GitHub, OpenAI, Anthropic, Stripe, Slack, Google, and more
+- Detects PII: SSN, credit cards, email addresses, phone numbers
+- Detects vulnerable code: SQL injection, command injection, XSS, path traversal, and more
+- Inline GitHub annotations on the PR diff
+- Configurable fail threshold and changed-files-only mode
+
+## Quick start
 
 ```yaml
 name: Security Scan
-
 on: [push, pull_request]
 
 jobs:
@@ -21,8 +23,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: spidercob/scan-action@v1
+      - uses: SpiderCob/scan-action@v1
 ```
+
+No token required. Works immediately.
 
 ## Inputs
 
@@ -44,33 +48,33 @@ jobs:
 
 ## Examples
 
-**Scan only changed files in PRs, fail on CRITICAL only:**
-
+**Scan only changed files, fail on CRITICAL only:**
 ```yaml
-- uses: spidercob/scan-action@v1
+- uses: SpiderCob/scan-action@v1
   with:
     changed_files_only: 'true'
     fail_on: CRITICAL
 ```
 
-**DLP-only scan (PII detection):**
-
+**DLP only (PII detection):**
 ```yaml
-- uses: spidercob/scan-action@v1
+- uses: SpiderCob/scan-action@v1
   with:
     scan_type: dlp
-    fail_on: HIGH
 ```
 
-**Use outputs in subsequent steps:**
+## Which action should I use?
 
-```yaml
-- uses: spidercob/scan-action@v1
-  id: spidercob
-- run: echo "Found ${{ steps.spidercob.outputs.findings_count }} issues"
-```
+| | `scan-action` (this) | `dlp-scan-action` |
+|---|---|---|
+| **Detection** | Regex only | ML-powered, high accuracy |
+| **False positives** | Higher | Minimal (ML filters test data) |
+| **Account needed** | No | Yes (free) |
+| **Internet required** | No | Yes |
+| **Recommendation** | Air-gapped / privacy-first / quick start | Most users |
 
-## Learn More
+## Learn more
 
-- [spidercob on PyPI](https://pypi.org/project/spidercob/)
-- [SpiderCob Enterprise](https://spidercob.com) — full DLP platform with dashboard, ICAP proxy, and ML classification
+- [SpiderCob on PyPI](https://pypi.org/project/spidercob/)
+- [SpiderCob Enterprise](https://spidercob.com) — full DLP platform with dashboard, ICAP proxy, audit trail
+
