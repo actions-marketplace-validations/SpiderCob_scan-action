@@ -19,6 +19,7 @@ SCAN_TYPE    = os.environ.get("SPIDERCOB_SCAN_TYPE", "both").lower()
 EXCLUDE      = [p.strip() for p in os.environ.get("SPIDERCOB_EXCLUDE", "").split(",") if p.strip()]
 CHANGED_ONLY = os.environ.get("SPIDERCOB_CHANGED_ONLY", "false").lower() == "true"
 GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT", "")
+GITHUB_STEP_SUMMARY = os.environ.get("GITHUB_STEP_SUMMARY", "")
 
 SEVERITY_RANK = {"NONE": 0, "LOW": 1, "MEDIUM": 2, "HIGH": 3, "CRITICAL": 4}
 
@@ -84,6 +85,7 @@ def main():
     print(f"   Mode: {SCAN_TYPE} | Fail on: {FAIL_ON} | Changed only: {CHANGED_ONLY}\n")
 
     all_findings: list[dict] = []
+    all_compliance: set[str] = set()
     files_with_findings = 0
 
     for filepath in files:
@@ -100,6 +102,7 @@ def main():
             for f in result["findings"]:
                 f["_file"] = rel
                 file_findings.append(f)
+            all_compliance.update(result.get("compliance_alerts", []))
 
         if dlp_scanner:
             result = dlp_scanner.scan(text)
@@ -109,6 +112,7 @@ def main():
                 f["line"] = line
                 f["_file"] = rel
                 file_findings.append(f)
+            all_compliance.update(result.get("compliance_alerts", []))
 
         if file_findings:
             files_with_findings += 1
@@ -134,16 +138,36 @@ def main():
     if total > 0:
         verdict = "BLOCK" if SEVERITY_RANK.get(highest, 0) >= SEVERITY_RANK.get(FAIL_ON, 3) else "REVIEW"
 
+    compliance_list = sorted(all_compliance)
+    compliance_str  = ", ".join(compliance_list) if compliance_list else "None"
+
     print(f"\n Scan complete")
     print(f"   Files scanned  : {len(files)}")
     print(f"   Files flagged  : {files_with_findings}")
     print(f"   Total findings : {total}")
     print(f"   Highest risk   : {highest}")
-    print(f"   Verdict        : {verdict}\n")
+    print(f"   Verdict        : {verdict}")
+    if compliance_list:
+        print(f"   Compliance     : {compliance_str}")
+    print()
+
+    # Write GitHub Step Summary if available
+    if GITHUB_STEP_SUMMARY:
+        with open(GITHUB_STEP_SUMMARY, "a") as f:
+            f.write("## SpiderCob Security Scan\n\n")
+            f.write(f"| | |\n|---|---|\n")
+            f.write(f"| **Files scanned** | {len(files)} |\n")
+            f.write(f"| **Findings** | {total} |\n")
+            f.write(f"| **Highest risk** | {highest} |\n")
+            f.write(f"| **Verdict** | {verdict} |\n")
+            if compliance_list:
+                f.write(f"| **Compliance alerts** | {compliance_str} |\n")
+            f.write("\n")
 
     set_output("findings_count", str(total))
     set_output("risk_level", highest)
     set_output("verdict", verdict)
+    set_output("compliance_alerts", compliance_str)
 
     if verdict == "BLOCK":
         print(f"::error::SpiderCob blocked: {total} finding(s) at {highest} severity. Review annotations above.")

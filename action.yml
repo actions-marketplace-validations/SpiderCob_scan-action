@@ -35,6 +35,8 @@ outputs:
     description: 'Highest risk level found: CRITICAL, HIGH, MEDIUM, LOW, NONE'
   verdict:
     description: 'BLOCK, REVIEW, or ALLOW'
+  compliance_alerts:
+    description: 'Comma-separated list of compliance frameworks triggered (e.g. PCI-DSS, GDPR, HIPAA)'
 
 runs:
   using: 'composite'
